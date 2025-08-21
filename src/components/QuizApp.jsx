@@ -1,11 +1,11 @@
 import { useState } from "react";
 import questions from "../data/question.js";
-import ProgressBar from "./progressbar";
-import ScoreBar from "./scorebar";
-import QuestionCard from "./questioncard";
-import DifficultyStars from "./difficultystars";
-import CategoryBadge from "./categorybadge";
-import QuestionTimer from "./questiontimer";
+import ProgressBar from "./ProgressBar.jsx";
+import ScoreBar from "./ScoreBar.jsx";
+import QuestionCard from "./QuestionCard.jsx";
+import DifficultyStars from "./DifficultyStars.jsx";
+import CategoryBadge from "./CategoryBadge.jsx";
+import QuestionTimer from "./QuestionTimer.jsx";
 
 export default function QuizApp() {
   const [currentQIndex, setCurrentQIndex] = useState(0);
