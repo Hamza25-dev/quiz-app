@@ -9,63 +9,84 @@ import QuestionTimer from "./QuestionTimer.jsx";
 
 export default function QuizApp() {
   const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [selected, setSelected] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [didTimeOut, setDidTimeOut] = useState(false);
   const [isCorrect, setIsCorrect] = useState(null);
   const [score, setScore] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
+
+  if (!questions || questions.length === 0) {
+    return <div>No questions found.</div>;
+  }
 
   const question = questions[currentQIndex];
-  const timerDuration = 45;
+  const timerDuration = 8;
+  const isLastQuestion = currentQIndex === questions.length - 1;
+  const hasAnswered = selectedAnswer !== null || didTimeOut;
 
   function handleAnswer(answer) {
-    if (selected) return;
-    setSelected(answer);
+    if (selectedAnswer || didTimeOut) return;
+    setSelectedAnswer(answer);
     const correct = answer === question.correctAnswer;
     setIsCorrect(correct);
     if (correct) setScore((prev) => prev + 1);
+
+    // On last question, do not jump to summary immediately; wait for user action
+    if (isLastQuestion) {
+      // Keep on the question to show feedback; user will click Finish
+    }
   }
 
   const nextQuestion = () => {
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex((prev) => prev + 1);
-      setSelected(null);
+      setSelectedAnswer(null);
+      setDidTimeOut(false);
       setIsCorrect(null);
     }
   };
 
   // ✅ check if quiz is completed
-  const isCompleted =
-    currentQIndex === questions.length - 1 && selected !== null;
-  const percentage = Math.round((score / questions.length) * 100);
+  const isCompleted = isLastQuestion && hasAnswered && showSummary;
+  const percentage = Math.round((score / questions.length) * 100) || 0;
+  const attempted = currentQIndex + (hasAnswered ? 1 : 0);
 
   return (
-    <div className="relative w-full h-[600px] max-w-lg mx-auto bg-white p-6 rounded-xl shadow-lg flex flex-col">
-      <ProgressBar current={currentQIndex + 1} total={questions.length} />
+    <div style={{ borderRadius: "20px" }} className="relative w-full h-[600px] max-w-lg mx-auto bg-white p-6 rounded-xl shadow-lg flex flex-col">
+      <ProgressBar current={currentQIndex + 1} total={questions.length} stickToTop />
       <CategoryBadge category={question.category} />
       <div className="flex justify-between items-center">
         <DifficultyStars level={question.difficulty} />
 
-        <QuestionTimer
-          duration={timerDuration}
-          keyReset={currentQIndex}
-          onTimeUp={() => {
-            if (!selected) {
-              setSelected("Time's up");
-              setIsCorrect(false);
-              setTimeout(() => {
-                nextQuestion();
-              }, 1000); // Optional delay before moving on
-            }
-          }}
-          isCompleted={isCompleted}
-        />
+        {!(isLastQuestion && hasAnswered) && (
+          <QuestionTimer
+            key={currentQIndex}
+            duration={timerDuration}
+            onTimeUp={() => {
+              if (!selectedAnswer && !didTimeOut) {
+                setDidTimeOut(true);
+                setIsCorrect(false);
+                setTimeout(() => {
+                  if (isLastQuestion) {
+                    setShowSummary(true);
+                  } else {
+                    nextQuestion();
+                  }
+                }, 1000); // Optional delay before moving on
+              }
+            }}
+            isCompleted={isCompleted}
+          />
+        )}
       </div>
 
-
-<div className="flex-grow overflow-auto">
+      <div className="flex-grow overflow-auto">
         {isCompleted ? (
           // ✅ Quiz completed screen
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <p className="text-3xl text-center font-bold text-green-600">Quiz Completed!</p>
+            <p className="text-3xl text-center font-bold text-green-600">
+              Quiz Completed!
+            </p>
             <p className="mt-2 text-lg text-gray-700">
               Your Score: {score}/{questions.length}
             </p>
@@ -78,12 +99,49 @@ export default function QuizApp() {
           <>
             <QuestionCard
               question={question}
-              selected={selected}
+              selected={selectedAnswer}
               isCorrect={isCorrect}
               onSelect={handleAnswer}
+              revealCorrect={didTimeOut}
             />
 
-            {selected && (
+            {(selectedAnswer || didTimeOut) && (
+              <>
+                {didTimeOut ? (
+                  <p className="text-center text-xl font-semibold mt-4 text-red-600">
+                    ⏱️ Time's Up!
+                  </p>
+                ) : (
+                  <p
+                    className={`text-center text-xl font-semibold mt-4 ${
+                      isCorrect ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {isCorrect ? "Correct!" : "Sorry!"}
+                  </p>
+                )}
+
+                {currentQIndex < questions.length - 1 && !didTimeOut && (
+                  <button
+                    onClick={nextQuestion}
+                    className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 mx-auto block"
+                  >
+                    Next Question
+                  </button>
+                )}
+
+                {isLastQuestion && (
+                  <button
+                    onClick={() => setShowSummary(true)}
+                    className="mt-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 mx-auto block"
+                  >
+                    Finish
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* {selected && (
               <>
                 <p
                   className={`text-center text-xl font-semibold mt-4 ${
@@ -101,7 +159,7 @@ export default function QuizApp() {
                   </button>
                 )}
               </>
-            )}
+            )} */}
           </>
         )}
       </div>
@@ -137,7 +195,7 @@ export default function QuizApp() {
       <div className="absolute bottom-4 left-6 right-6">
         <ScoreBar
           score={score}
-          current={currentQIndex + 1}
+          current={attempted}
           total={questions.length}
         />
       </div>
