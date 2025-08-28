@@ -20,7 +20,7 @@ export default function QuizApp() {
   }
 
   const question = questions[currentQIndex];
-  const timerDuration = 8;
+  const timerDuration = 45;
   const isLastQuestion = currentQIndex === questions.length - 1;
   const hasAnswered = selectedAnswer !== null || didTimeOut;
 
